@@ -4,27 +4,31 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-@app.route('/check', methods=['POST'])
-def check_article():
-    data = request.get_json(force=True)
-    url = data.get('url')
+KEYWORDS = ['모집', '신청']
 
-    try:
-        response = requests.get(url, timeout=5)
-        soup = BeautifulSoup(response.text, 'html.parser')
+def summarize(text):
+    # 매우 단순한 요약기 (원한다면 GPT API로 교체 가능)
+    return text[:120] + "..."
 
-        # 본문 텍스트 추출
-        paragraphs = soup.find_all('p')
-        full_text = ' '.join(p.get_text() for p in paragraphs)
+@app.route('/filter_and_summarize', methods=['POST'])
+def filter_and_summarize():
+    articles = request.json.get('articles', [])
+    result = []
 
-        # 키워드 포함 여부 확인
-        keywords = ['모집', '신청']
-        contains = any(kw in full_text for kw in keywords)
+    for item in articles:
+        try:
+            r = requests.get(item['link'], timeout=3, headers={"User-Agent": "Mozilla/5.0"})
+            soup = BeautifulSoup(r.text, 'html.parser')
+            content = soup.get_text()
 
-        return jsonify({'contains': contains})
+            if any(kw in content for kw in KEYWORDS):
+                result.append({
+                    'title': item['title'],
+                    'link': item['link'],
+                    'summary': summarize(content)
+                })
+        except:
+            continue
 
-    except Exception as e:
-        return jsonify({'contains': False, 'error': str(e)})
+    return jsonify(result)
 
-if __name__ == '__main__':
-    app.run(debug=True)

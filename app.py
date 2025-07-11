@@ -4,22 +4,27 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-@app.route("/check", methods=["POST"])
-def check_keyword():
-    data = request.json
-    url = data.get("url")
+@app.route('/check', methods=['POST'])
+def check_article():
+    data = request.get_json(force=True)
+    url = data.get('url')
 
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        res = requests.get(url, headers=headers, timeout=5)
-        soup = BeautifulSoup(res.text, "html.parser")
+        response = requests.get(url, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-        text = soup.get_text(separator=' ', strip=True)
-        contains_keyword = "모집" in text
+        # 본문 텍스트 추출
+        paragraphs = soup.find_all('p')
+        full_text = ' '.join(p.get_text() for p in paragraphs)
 
-        return jsonify({"url": url, "contains": contains_keyword})
+        # 키워드 포함 여부 확인
+        keywords = ['모집', '신청']
+        contains = any(kw in full_text for kw in keywords)
+
+        return jsonify({'contains': contains})
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'contains': False, 'error': str(e)})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)

@@ -7,18 +7,19 @@ app = Flask(__name__)
 KEYWORDS = ['모집', '신청']
 
 def extract_main_text(soup):
-    # 주요 기사 본문 태그들 우선 탐색
     for selector in [
-        'article',
         'div#article-view-content-div',
         'div.article_txt',
+        'article',
+        'section.article_body',
         'div#news-view-area',
-        'section.article_body'
+        'div#content',
+        'div.view_cont',
+        'div.article'
     ]:
         tag = soup.select_one(selector)
         if tag:
             return tag.get_text(separator=' ', strip=True)
-    # 실패 시 fallback: 전체 텍스트
     return soup.get_text(separator=' ', strip=True)
 
 def summarize(text):

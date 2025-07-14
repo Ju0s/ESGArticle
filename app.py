@@ -7,8 +7,7 @@ app = Flask(__name__)
 KEYWORDS = ['모집', '신청']
 
 def summarize(text):
-    # 매우 단순한 요약기 (원한다면 GPT API로 교체 가능)
-    return text[:120] + "..."
+    return text[:120] + '...' if len(text) > 120 else text
 
 @app.route('/filter_and_summarize', methods=['POST'])
 def filter_and_summarize():
@@ -17,18 +16,22 @@ def filter_and_summarize():
 
     for item in articles:
         try:
-            r = requests.get(item['link'], timeout=3, headers={"User-Agent": "Mozilla/5.0"})
+            r = requests.get(item['link'], timeout=5, headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(r.text, 'html.parser')
-            content = soup.get_text()
+            content = soup.get_text(separator=' ', strip=True)
 
             if any(kw in content for kw in KEYWORDS):
+                summary = summarize(content)
                 result.append({
                     'title': item['title'],
                     'link': item['link'],
-                    'summary': summarize(content)
+                    'summary': summary
                 })
-        except:
+        except Exception as e:
+            print(f"[ERROR] {item['link']} - {e}")
             continue
 
     return jsonify(result)
 
+if __name__ == '__main__':
+    app.run(debug=True)

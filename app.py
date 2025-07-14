@@ -39,7 +39,15 @@ def filter_and_summarize():
 
     for item in articles:
         try:
-            r = requests.get(item['link'], timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile; rv:109.0) Gecko/20100101 Firefox/119.0"
+            }
+            r = requests.get(item['link'], timeout=5, headers=headers)
+
+            # 🔍 debug.html로 저장해서 확인 (선택 사항)
+            with open("debug.html", "w", encoding="utf-8") as f:
+                f.write(r.text)
+                
             soup = BeautifulSoup(r.text, 'html.parser')
 
             content = extract_main_text(soup)

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
+import re
 
 app = Flask(__name__)
 
@@ -8,7 +9,7 @@ KEYWORDS = ['모집', '신청']
 
 def extract_main_text(soup):
     for selector in [
-        'div#article-view-content-div',
+        'div#article-view-content',
         'div.article_txt',
         'article',
         'section.article_body',
@@ -23,14 +24,13 @@ def extract_main_text(soup):
     return soup.get_text(separator=' ', strip=True)
 
 def summarize(text):
-    for kw in ['모집', '신청']:
+    for kw in KEYWORDS:
         idx = text.find(kw)
         if idx != -1:
             start = max(0, idx - 60)
             end = min(len(text), idx + 60)
             return '...' + text[start:end].strip() + '...'
     return text[:120] + '...'
-
 
 @app.route('/filter_and_summarize', methods=['POST'])
 def filter_and_summarize():
@@ -42,9 +42,10 @@ def filter_and_summarize():
             r = requests.get(item['link'], timeout=5, headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(r.text, 'html.parser')
 
-            content = extract_main_text(soup)  # ⬅ 변경된 부분 ✅
+            content = extract_main_text(soup)
+            content = re.sub(r'\s+', ' ', content)  # 🔧 공백/개행 정리
 
-            if any(kw in content for kw in ['모집', '신청']):
+            if any(kw in content for kw in KEYWORDS):
                 summary = summarize(content)
                 result.append({
                     'title': item['title'],
@@ -56,7 +57,6 @@ def filter_and_summarize():
             continue
 
     return jsonify(result)
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)

@@ -8,14 +8,19 @@ KEYWORDS = ['모집', '신청']
 
 def summarize(text):
     import re
-    # 문장 단위로 분리
-    candidates = re.split(r'[\n.?!]', text)
+
+    # 1. 문장 구분 기준: 마침표, 줄바꿈, 물음표, 느낌표 등
+    sentences = re.split(r'(?<=[.!?])\s+|\n+', text)
+
+    # 2. 키워드 포함 문장 찾기
     for kw in ['모집', '신청']:
-        for sentence in candidates:
-            if kw in sentence:
-                return sentence.strip()
+        for s in sentences:
+            if kw in s and len(s.strip()) > 20:
+                return s.strip()
+
+    # 3. fallback: 본문 앞 120자
     return text[:120] + '...'
-    
+
 @app.route('/filter_and_summarize', methods=['POST'])
 def filter_and_summarize():
     articles = request.json.get('articles', [])

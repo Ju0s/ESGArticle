@@ -44,24 +44,26 @@ def filter_and_summarize():
             }
             r = requests.get(item['link'], timeout=5, headers=headers)
 
-            # 🔍 debug.html로 저장해서 확인 (선택 사항)
+            # ✅ 강제 저장 테스트
             with open("debug.html", "w", encoding="utf-8") as f:
                 f.write(r.text)
-                
+
             soup = BeautifulSoup(r.text, 'html.parser')
 
             content = extract_main_text(soup)
-            content = re.sub(r'\s+', ' ', content)  # 🔧 공백/개행 정리
+            content = re.sub(r'\s+', ' ', content)
 
-            if any(kw in content for kw in KEYWORDS):
+            if any(kw in content for kw in ['모집', '신청']):
                 summary = summarize(content)
                 result.append({
                     'title': item['title'],
                     'link': item['link'],
                     'summary': summary
                 })
+
         except Exception as e:
-            print(f"[ERROR] {item['link']} - {e}")
+            print(f"[ERROR] 링크: {item['link']}")
+            print(f"[ERROR] 에러 내용: {e}")
             continue
 
     return jsonify(result)

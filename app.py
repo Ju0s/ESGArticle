@@ -7,7 +7,16 @@ app = Flask(__name__)
 KEYWORDS = ['모집', '신청']
 
 def summarize(text):
-    return text[:120] + '...' if len(text) > 120 else text
+    import re
+    for kw in ['모집', '신청']:
+        if kw in text:
+            # 키워드 포함된 문장 전체 추출
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            for s in sentences:
+                if kw in s:
+                    return s.strip()
+    # 키워드 문장 없으면 앞부분 120자 자름
+    return text[:120] + '...'
 
 @app.route('/filter_and_summarize', methods=['POST'])
 def filter_and_summarize():
